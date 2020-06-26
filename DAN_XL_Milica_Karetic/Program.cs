@@ -7,16 +7,44 @@ namespace DAN_XL_Milica_Karetic
 {
     class Program
     {
+        /// <summary>
+        /// Format array
+        /// </summary>
         public static string[] formats = new string[2] { "A3", "A4" };
+        /// <summary>
+        /// List of PCs
+        /// </summary>
         public static List<Thread> threads = new List<Thread>();
+        /// <summary>
+        /// Random object
+        /// </summary>
         public static Random rnd = new Random();
+        /// <summary>
+        /// File name for colors file
+        /// </summary>
         static string fileName = @"..\..\Palete.txt";
 
+        /// <summary>
+        /// Event that signals that all PCs are done printing
+        /// </summary>
         static CountdownEvent countdown = new CountdownEvent(10);
 
+        /// <summary>
+        /// A3 format printer
+        /// </summary>
         static SemaphoreSlim semaphoreA3 = new SemaphoreSlim(1);
+        /// <summary>
+        /// A4 format printer
+        /// </summary>
         static SemaphoreSlim semaphoreA4 = new SemaphoreSlim(1);
+
+        /// <summary>
+        /// locker for A3 printer
+        /// </summary>
         static readonly object lockerA3 = new object();
+        /// <summary>
+        /// locker for A4 printer
+        /// </summary>
         static readonly object lockerA4 = new object();
 
 
@@ -42,23 +70,20 @@ namespace DAN_XL_Milica_Karetic
         /// </summary>
         public static void PrintA3()
         {
-
             lock (lockerA3)
             {
                 semaphoreA3.Wait();
 
-                Console.WriteLine("\nPrinting A3 for " + Thread.CurrentThread.Name);
+                Console.WriteLine("\nPrinting A3 document for " + Thread.CurrentThread.Name);
+                //printing for 1000ms
                 Thread.Sleep(1000);
-
                 
-                Console.WriteLine("\n\n =====> Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A3 format\n\n");
+                Console.WriteLine("\n\n=====> Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A3 format\n\n");
                 
                 semaphoreA3.Release();
+                //singal that one PC is done printing
                 countdown.Signal();
             }
-
-
-
         }
 
         /// <summary>
@@ -71,18 +96,14 @@ namespace DAN_XL_Milica_Karetic
             {
                 semaphoreA4.Wait();
 
-                Console.WriteLine("\nPrinting A4 for " + Thread.CurrentThread.Name);
+                Console.WriteLine("\nPrinting A4 document for " + Thread.CurrentThread.Name);
                 Thread.Sleep(1000);
-
                 
-                Console.WriteLine("\n\n =====> Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A4 format\n\n");
+                Console.WriteLine("\n\n=====> Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A4 format\n\n");
                 
-
                 semaphoreA4.Release();
                 countdown.Signal();
             }
-
-
         }
 
         /// <summary>
@@ -163,8 +184,7 @@ namespace DAN_XL_Milica_Karetic
                         Thread t = new Thread(Print);
                         t.Name = Thread.CurrentThread.Name;
                         t.Start();
-                    }
-                       
+                    }                       
                 }
                 //if format is A4 send request to A4 printer
                 else if (format == "A4")
@@ -180,15 +200,14 @@ namespace DAN_XL_Milica_Karetic
                         t.Start();
                     }
                         
-                }
-                
-
+                }               
                 countdown.Wait();
 
             } while (countdown.CurrentCount != 0);
          
             
         }
+
         static void Main(string[] args)
         {
             //thread for writing colors into file
