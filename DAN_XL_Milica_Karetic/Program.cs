@@ -16,6 +16,9 @@ namespace DAN_XL_Milica_Karetic
 
         static SemaphoreSlim semaphoreA3 = new SemaphoreSlim(1);
         static SemaphoreSlim semaphoreA4 = new SemaphoreSlim(1);
+        static readonly object lockerA3 = new object();
+        static readonly object lockerA4 = new object();
+
 
         /// <summary>
         /// Write colors to file
@@ -39,15 +42,23 @@ namespace DAN_XL_Milica_Karetic
         /// </summary>
         public static void PrintA3()
         {
-            semaphoreA3.Wait();
 
-            Console.WriteLine("\nPrinting A3 for " + Thread.CurrentThread.Name);
-            Thread.Sleep(1000);
+            lock (lockerA3)
+            {
+                semaphoreA3.Wait();
 
-            Console.WriteLine("\nPrinting is complete. User of " + Thread.CurrentThread.Name + " can come for document in A3 format");
+                Console.WriteLine("\nPrinting A3 for " + Thread.CurrentThread.Name);
+                Thread.Sleep(1000);
 
-            semaphoreA3.Release();
-            countdown.Signal();     
+                
+                Console.WriteLine("\n\n =====> Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A3 format\n\n");
+                
+                semaphoreA3.Release();
+                countdown.Signal();
+            }
+
+
+
         }
 
         /// <summary>
@@ -55,15 +66,23 @@ namespace DAN_XL_Milica_Karetic
         /// </summary>
         public static void PrintA4()
         {
-            semaphoreA4.Wait();
 
-            Console.WriteLine("\nPrinting A4 for " + Thread.CurrentThread.Name);
-            Thread.Sleep(1000);
+            lock (lockerA4)
+            {
+                semaphoreA4.Wait();
 
-            Console.WriteLine("\nPrinting is complete. User of " + Thread.CurrentThread.Name + " can come for document in A4 format");
+                Console.WriteLine("\nPrinting A4 for " + Thread.CurrentThread.Name);
+                Thread.Sleep(1000);
 
-            semaphoreA4.Release();
-            countdown.Signal();
+                
+                Console.WriteLine("\n\n =====> Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A4 format\n\n");
+                
+
+                semaphoreA4.Release();
+                countdown.Signal();
+            }
+
+
         }
 
         /// <summary>
@@ -97,41 +116,72 @@ namespace DAN_XL_Milica_Karetic
             return colors[num];
         }
 
-
+        /// <summary>
+        /// Printing method
+        /// </summary>
         public static void Print()
         {
             do
             {
+                Thread.Sleep(100);
+
                 string currentName = Thread.CurrentThread.Name;
+                //get colors from file
                 List<string> colors = getColors();
+                //random color
                 string color = GetRandomColor(colors);
 
                 string format = "";
                 string orientation = "";
 
+                //random format for printing
                 int randomFormat = rnd.Next(0, 2);
                 if (randomFormat == 0)
                     format = "A3";
                 else
                     format = "A4";
 
+                //random orientation
                 int randomOrientation = rnd.Next(0, 2);
                 if (randomOrientation == 0)
                     orientation = "portrait";
                 else
                     orientation = "landscape";
 
+                //send request
                 Console.WriteLine(currentName + " sent request for printing document in " + format + " format. Color: " + color + ". Orientation: " + orientation);
 
+                //if format is A3 send request to A3 printer
                 if (format == "A3")
                 {
-                    PrintA3();
+                    //if printer is free
+                    if (semaphoreA3.CurrentCount > 0)
+                        PrintA3();
+                    //if printer is busy try again
+                    else
+                    {
+                        Thread t = new Thread(Print);
+                        t.Name = Thread.CurrentThread.Name;
+                        t.Start();
+                    }
+                       
                 }
+                //if format is A4 send request to A4 printer
                 else if (format == "A4")
                 {
-                    PrintA4();
+                    //if printer is free
+                    if (semaphoreA4.CurrentCount > 0)
+                        PrintA4();
+                    //if printer is busy try again
+                    else
+                    {
+                        Thread t = new Thread(Print);
+                        t.Name = Thread.CurrentThread.Name;
+                        t.Start();
+                    }
+                        
                 }
-                Thread.Sleep(100);
+                
 
                 countdown.Wait();
 
