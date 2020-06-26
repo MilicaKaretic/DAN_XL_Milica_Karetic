@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace DAN_XL_Milica_Karetic
 {
@@ -15,16 +12,14 @@ namespace DAN_XL_Milica_Karetic
         public static Random rnd = new Random();
         static string fileName = @"..\..\Palete.txt";
 
-        static AutoResetEvent eventA3 = new AutoResetEvent(false);
-        static AutoResetEvent eventA4 = new AutoResetEvent(false);
-
         static CountdownEvent countdown = new CountdownEvent(10);
-        static readonly object locker = new object();
 
         static SemaphoreSlim semaphoreA3 = new SemaphoreSlim(1);
         static SemaphoreSlim semaphoreA4 = new SemaphoreSlim(1);
 
-
+        /// <summary>
+        /// Write colors to file
+        /// </summary>
         public static void WriteColor()
         {
             string[] colors = new string[] { "red", "black", "green", "white", "yellow" };
@@ -39,53 +34,42 @@ namespace DAN_XL_Milica_Karetic
             }
         }
 
+        /// <summary>
+        /// A3 format printer
+        /// </summary>
         public static void PrintA3()
         {
-            //lock(locker)
-            //{
-                //Console.WriteLine("Printing A3 for " + Thread.CurrentThread.Name);
-                //Thread.Sleep(1000);
-                //eventA3.Set();
-                //Console.WriteLine("Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A3 format");
+            semaphoreA3.Wait();
 
-                ////barrier.SignalAndWait();
-                //countdown.Signal();
-
-                semaphoreA3.Wait();
-
-                Console.WriteLine("Printing A3 for " + Thread.CurrentThread.Name);
-                Thread.Sleep(1000);
-
-                Console.WriteLine("Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A3 format");
-
-                semaphoreA3.Release();
-                countdown.Signal();
-            //}           
-        }
-
-        public static void PrintA4()
-        {
-            //lock(locker)
-            // {
-            //     Console.WriteLine("Printing A4 for " + Thread.CurrentThread.Name);
-            //     Thread.Sleep(1000);
-            //     eventA4.Set();
-            //     Console.WriteLine("Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A4 format");
-
-            //     // barrier.SignalAndWait();
-            //     countdown.Signal();
-            // }
-            semaphoreA4.Wait();
-
-            Console.WriteLine("Printing A4 for " + Thread.CurrentThread.Name);
+            Console.WriteLine("\nPrinting A3 for " + Thread.CurrentThread.Name);
             Thread.Sleep(1000);
 
-            Console.WriteLine("Printing is complete. User of " + Thread.CurrentThread.Name + " can come for document in A4 format");
+            Console.WriteLine("\nPrinting is complete. User of " + Thread.CurrentThread.Name + " can come for document in A3 format");
+
+            semaphoreA3.Release();
+            countdown.Signal();     
+        }
+
+        /// <summary>
+        /// A4 format printer
+        /// </summary>
+        public static void PrintA4()
+        {
+            semaphoreA4.Wait();
+
+            Console.WriteLine("\nPrinting A4 for " + Thread.CurrentThread.Name);
+            Thread.Sleep(1000);
+
+            Console.WriteLine("\nPrinting is complete. User of " + Thread.CurrentThread.Name + " can come for document in A4 format");
 
             semaphoreA4.Release();
             countdown.Signal();
         }
 
+        /// <summary>
+        /// Get colors from file
+        /// </summary>
+        /// <returns>Color list</returns>
         public static List<string> getColors()
         {
             StreamReader sr = new StreamReader(fileName);
@@ -102,6 +86,11 @@ namespace DAN_XL_Milica_Karetic
             return colors;
         }
 
+        /// <summary>
+        /// Get random color from color list
+        /// </summary>
+        /// <param name="colors">Color list</param>
+        /// <returns>Random color from list</returns>
         public static string GetRandomColor(List<string> colors)
         {
             int num = rnd.Next(0, colors.Count);
@@ -137,30 +126,22 @@ namespace DAN_XL_Milica_Karetic
                 if (format == "A3")
                 {
                     PrintA3();
-                    //eventA3.WaitOne();
-                    // countdown.Wait();
-
                 }
                 else if (format == "A4")
                 {
                     PrintA4();
-
-                    //eventA4.WaitOne();
-                    // countdown.Wait();
                 }
                 Thread.Sleep(100);
-                //eventA3.WaitOne();
-                //eventA4.WaitOne();
 
                 countdown.Wait();
 
             } while (countdown.CurrentCount != 0);
-
          
             
         }
         static void Main(string[] args)
         {
+            //thread for writing colors into file
             Thread t1 = new Thread(new ThreadStart(WriteColor))
             {
                 Name = "WriteColor"
@@ -168,24 +149,27 @@ namespace DAN_XL_Milica_Karetic
             t1.Start();
             t1.Join();
 
+            //10 PCs
             for (int i = 0; i < 10; i++)
             {
                 Thread t = new Thread(new ThreadStart(Print))
                 {
-                    Name = string.Format("Computer_{0}", i+1)
+                    Name = string.Format("PC_{0}", i+1)
                 };
                 threads.Add(t);
             }
+            //start PCs
             for (int i = 0; i < threads.Count; i++)
             {
                 threads[i].Start();
             }
+            //join them
             for (int i = 0; i < threads.Count; i++)
             {
                 threads[i].Join();
             }
-           
-            
+            Console.WriteLine("\nThey're all done printing");
+            Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
         }
     }
